@@ -4817,6 +4817,47 @@ else if (shouldInitializePageScript) {
     }
   }
 
+  type NoFeedApiKind = 'home' | 'related'
+
+  function getNoFeedApiKind(input: RequestInfo | URL): NoFeedApiKind | null {
+    let requestUrl: URL
+    try {
+      requestUrl = new URL(getFetchInputUrl(input), window.location.href)
+    }
+    catch {
+      return null
+    }
+
+    if (requestUrl.hostname !== 'api.bilibili.com')
+      return null
+
+    // 首页只拦截推荐流接口；热门、动态、搜索等用户主动入口保持原样。
+    const isHomePage = window.location.hostname === 'www.bilibili.com'
+      && (window.location.pathname === '/' || window.location.pathname === '/index.html')
+    if (isHomePage && [
+      '/x/web-interface/wbi/index/top/feed/rcmd',
+      '/x/web-interface/index/top/feed/rcmd',
+    ].includes(requestUrl.pathname)) {
+      return 'home'
+    }
+
+    // 视频页仅拦截相关推荐接口，分 P、合集、收藏列表所需接口不在此范围。
+    const isStandaloneVideoPage = window.location.hostname === 'www.bilibili.com'
+      && window.location.pathname.startsWith('/video/')
+    if (isStandaloneVideoPage && requestUrl.pathname === '/x/web-interface/archive/related')
+      return 'related'
+
+    return null
+  }
+
+  function createNoFeedApiResponse(kind: NoFeedApiKind): Response {
+    const data = kind === 'home' ? { item: [] } : []
+    return new Response(JSON.stringify({ code: 0, message: '0', ttl: 1, data }), {
+      status: 200,
+      headers: { 'content-type': 'application/json; charset=utf-8' },
+    })
+  }
+
   const originalFetch = window.fetch
 
   function fetchWithSearchSettings(thisArg: unknown, input: RequestInfo | URL, init?: RequestInit) {
@@ -4835,6 +4876,18 @@ else if (shouldInitializePageScript) {
   }
 
   window.fetch = function (input: RequestInfo | URL, init?: RequestInit) {
+    const noFeedApiKind = getNoFeedApiKind(input)
+    if (noFeedApiKind && !settingsReady) {
+      // 首个推荐请求可能早于设置消息；等真实设置到达后再决定是否发送网络请求。
+      return settingsReadyPromise.then(() => {
+        if (currentSettings?.noFeedMode)
+          return createNoFeedApiResponse(noFeedApiKind)
+        return originalFetch.call(this, input, init)
+      })
+    }
+    if (noFeedApiKind && currentSettings?.noFeedMode)
+      return Promise.resolve(createNoFeedApiResponse(noFeedApiKind))
+
     if (isSearchResultFetch(input) && !settingsReady) {
       return settingsReadyPromise.then(() => {
         return fetchWithSearchSettings(this, input, init)

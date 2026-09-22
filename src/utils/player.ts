@@ -905,6 +905,12 @@ export function disableNativeEndPlaybackBehavior(videoType = detectVideoType()):
 export function applyAutoPlayByVideoType() {
   const videoType = detectVideoType()
 
+  // No Feed 模式下，普通单视频播完必须停止；显式队列仍由下方原逻辑处理。
+  if (settings.value.noFeedMode && isVideoPage() && videoType === VideoType.RECOMMEND) {
+    disableNativeEndPlaybackBehavior(videoType)
+    return
+  }
+
   // 自定义顺序/逆序/随机播放独占 ended 事件；播放器重建后继续关闭原生续播，
   // 避免官方逻辑与扩展同时抢着切下一集。播完暂停/单集循环仍交给默认播放模式。
   if (customEndPlaybackHandlerActive && doesEndBehaviorAllowCustomAdvance(videoType)) {

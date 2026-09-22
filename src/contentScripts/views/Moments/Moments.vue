@@ -2225,7 +2225,8 @@ function matchesBlockedMomentKeyword(moment: DisplayMoment) {
 
 /** 想看分组和任一动态过滤都只允许通过按钮继续分页。 */
 function hasActiveMomentFilters() {
-  return settings.value.momentsFilterUpRecommendation
+  return settings.value.noFeedMode
+    || settings.value.momentsFilterUpRecommendation
     || settings.value.momentsHideChargeExclusive
     || settings.value.momentsHideVideoReservation
     || settings.value.momentsHideLiveReservation
@@ -2254,7 +2255,8 @@ function requiresManualMomentPaging() {
 function passesMomentSettings(moment: DisplayMoment) {
   if (matchesBlockedMomentKeyword(moment))
     return false
-  if (settings.value.momentsFilterUpRecommendation && moment.isUpRecommendation)
+  // No Feed 只过滤接口明确标记的 UP 主推荐，不影响真实关注动态。
+  if ((settings.value.noFeedMode || settings.value.momentsFilterUpRecommendation) && moment.isUpRecommendation)
     return false
   if (settings.value.momentsHideChargeExclusive && moment.isChargeExclusive)
     return false
@@ -3982,6 +3984,7 @@ watch(
 
 watch(
   [
+    () => settings.value.noFeedMode,
     () => settings.value.momentsFilterUpRecommendation,
     () => settings.value.momentsHideChargeExclusive,
     () => settings.value.momentsHideVideoReservation,

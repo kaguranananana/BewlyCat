@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { useBewlyApp } from '~/composables/useAppProvider'
+import { settings } from '~/logic'
 import type { List as PopularAnimeItem, PopularAnimeResult } from '~/models/anime/popular'
 import type { ItemSubItem as RecommendationItem, RecommendationResult } from '~/models/anime/recommendation'
 import type { List as WatchListItem, WatchListResult } from '~/models/anime/watchList'
@@ -19,6 +20,7 @@ const isLoadingRecommendAnime = ref<boolean>()
 const activatedSeasonId = ref<number>()
 const noMoreContent = ref<boolean>()
 const animeTimeTableRef = ref()
+let recommendRequestGeneration = 0
 const { handleReachBottom, handlePageRefresh } = useBewlyApp()
 
 const isLoading = computed(() => {
@@ -28,13 +30,16 @@ const isLoading = computed(() => {
 onMounted(() => {
   getAnimeWatchList()
   getPopularAnimeList()
-  getRecommendAnimeList()
+  if (!settings.value.noFeedMode)
+    getRecommendAnimeList()
 
   initPageAction()
 })
 
 function initPageAction() {
   handleReachBottom.value = () => {
+    if (settings.value.noFeedMode)
+      return
     if (isLoadingRecommendAnime.value)
       return
     if (noMoreContent.value)
@@ -54,10 +59,25 @@ function initPageAction() {
 
     getAnimeWatchList()
     getPopularAnimeList()
-    getRecommendAnimeList()
+    if (!settings.value.noFeedMode)
+      getRecommendAnimeList()
     animeTimeTableRef.value?.refreshAnimeTimeTable()
   }
 }
+
+watch(
+  () => settings.value.noFeedMode,
+  (enabled) => {
+    // 开启时立即清掉已经加载的算法推荐；关闭后按原逻辑重新请求首屏。
+    recommendRequestGeneration++
+    recommendAnimeList.length = 0
+    cursor.value = 0
+    noMoreContent.value = false
+    isLoadingRecommendAnime.value = false
+    if (!enabled)
+      getRecommendAnimeList()
+  },
+)
 
 function getAnimeWatchList() {
   isLoadingAnimeWatchList.value = true
@@ -82,11 +102,16 @@ function getAnimeWatchList() {
 }
 
 function getRecommendAnimeList() {
+  const requestGeneration = recommendRequestGeneration
   isLoadingRecommendAnime.value = true
   api.anime.getRecommendAnimeList({
     coursor: cursor.value,
   })
     .then((response: RecommendationResult) => {
+      // 设置切换后丢弃旧请求结果，避免关闭推荐时又被在途响应回填。
+      if (requestGeneration !== recommendRequestGeneration)
+        return
+
       const {
         code,
         data: { items, coursor, has_next },
@@ -103,7 +128,8 @@ function getRecommendAnimeList() {
         noMoreContent.value = true
     })
     .finally(() => {
-      isLoadingRecommendAnime.value = false
+      if (requestGeneration === recommendRequestGeneration)
+        isLoadingRecommendAnime.value = false
     })
 }
 
@@ -255,7 +281,7 @@ function getPopularAnimeList() {
       </section>
 
       <!-- Recommended for you -->
-      <section class="anime-section">
+      <section v-if="!settings.noFeedMode" class="anime-section">
         <h3 class="bew-page-heading" text="$bew-text-1" mb-6>
           {{ $t('anime.recommended_for_you') }}
         </h3>
@@ -288,10 +314,10 @@ function getPopularAnimeList() {
     </div>
 
     <!-- no more content -->
-    <Empty v-if="noMoreContent" class="pb-4" :description="$t('common.no_more_content')" />
+    <Empty v-if="!settings.noFeedMode && noMoreContent" class="pb-4" :description="$t('common.no_more_content')" />
 
     <!-- loading -->
-    <Loading v-if="isLoadingRecommendAnime && recommendAnimeList.length !== 0" m="-t-4" />
+    <Loading v-if="!settings.noFeedMode && isLoadingRecommendAnime && recommendAnimeList.length !== 0" m="-t-4" />
   </div>
 </template>
 

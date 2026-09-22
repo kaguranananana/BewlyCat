@@ -23,7 +23,7 @@ import { getCookie, injectCSS, isElectron, isHomePage, isInIframe, isNotificatio
 import { initNativeFavoriteSeasonPlayAllIntercept } from '~/utils/nativeFavoriteSeasonPlayAll'
 import { createPageSettingsPayload } from '~/utils/pageSettingsProtocol'
 import { isPhotoViewerOpen } from '~/utils/photoViewer'
-import { applyAutoPlayByVideoType, applyDefaultCaptionState, applyDefaultDanmakuState, applyRememberedPlaybackRate, defaultMode, getVideoElement, handleVideoPageNavigation, isPlayerDisplayModeReady, isPlayerShowingEndingRecommendation, isVideoPage, resetAutoPlayUserChangeFlag, resolveDefaultVideoPlayerMode, startAutoExitFullscreenMonitoring, startAutoPlayUserChangeMonitoring, startPlaybackRateMonitoring, webFullscreen, widescreen } from '~/utils/player'
+import { applyAutoPlayByVideoType, applyDefaultCaptionState, applyDefaultDanmakuState, applyRememberedPlaybackRate, defaultMode, detectVideoType, getVideoElement, handleVideoPageNavigation, isPlayerDisplayModeReady, isPlayerShowingEndingRecommendation, isVideoPage, resetAutoPlayUserChangeFlag, resolveDefaultVideoPlayerMode, startAutoExitFullscreenMonitoring, startAutoPlayUserChangeMonitoring, startPlaybackRateMonitoring, VideoType, webFullscreen, widescreen } from '~/utils/player'
 import { applyPreservedOrDefaultCustomPlay, applyRandomPlayActivationSettings, destroyRandomPlay, initRandomPlay, isCustomPlayPage, resetRandomPlayInitialization, syncRandomPlayOrder, syncRandomPlayUI } from '~/utils/randomPlay'
 import { markContentScriptHealthy } from '~/utils/refreshPrompt'
 import { getPluginSearchResultsUrl, navigateToPluginSearchResultsInPlace, openSearchResults, shouldUsePluginSearchResultsPage } from '~/utils/searchNavigation'
@@ -38,6 +38,7 @@ import { version } from '../../package.json'
 import { initBewlyWidescreenControl } from './bewlyWidescreenControl'
 import { setupIframePhotoViewerDetector } from './features/iframePhotoViewerDetector'
 import { setupNativeHomeFeedHistory } from './features/nativeHomeFeedHistory'
+import { applyNoFeedPageState } from './features/noFeedMode'
 import { setupNotificationStateInvalidation } from './features/notificationStateInvalidation'
 import { setupOpusDetailDrawerLayout } from './features/opusDetailDrawerLayout'
 import { setupWatchLaterAutoRemove } from './features/watchLaterAutoRemove'
@@ -503,6 +504,12 @@ else if (shouldInitializeContentScript) {
 
   // 默认播放器模式之后的唯一结束行为入口：先恢复上一集调过的自定义播放，再套自动连播。
   function applyEndPlaybackBehavior() {
+    // No Feed 只接管普通单视频；明确的分 P、合集和列表继续使用各自的播放设置。
+    if (settings.value.noFeedMode && isVideoPage() && detectVideoType() === VideoType.RECOMMEND) {
+      applyAutoPlayByVideoType()
+      return
+    }
+
     if (isCustomPlayPage() && settings.value.enableRandomPlay) {
       initRandomPlayFeature()
       applyPreservedOrDefaultCustomPlay()
@@ -1312,11 +1319,19 @@ else if (shouldInitializeContentScript) {
   })
 
   void settingsReady.then(() => {
+    // 设置就绪后再加根节点标记，避免读取存储前按默认值闪烁或误隐藏页面内容。
+    applyNoFeedPageState(settings.value.noFeedMode)
+
     if (settings.value.useOriginalBilibiliHomepage)
       contentScriptGlobal.__BEWLYCAT_PAGE_LOADING__?.revealHomepage()
     if (!isSupportedPages() && !isSupportedIframePages())
       contentScriptGlobal.__BEWLYCAT_PAGE_LOADING__?.dispose()
   })
+
+  watch(
+    () => settings.value.noFeedMode,
+    enabled => applyNoFeedPageState(enabled),
+  )
 
   async function onDOMLoaded() {
     // 所有页面都先完成设置读取，避免启动期 watcher 基于默认值生成陈旧写入。
@@ -1591,6 +1606,7 @@ else if (shouldInitializeContentScript) {
   // 深度 watch 的新旧值会共用同一对象；逐项监听才能识别原地修改。
   watch(
     [
+      () => settings.value.noFeedMode,
       () => settings.value.useBilibiliDefaultAutoPlay,
       () => settings.value.autoPlayMultipart,
       () => settings.value.autoPlayCollection,
