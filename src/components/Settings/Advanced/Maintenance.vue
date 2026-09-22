@@ -246,6 +246,10 @@ function handleImportFile(event: Event) {
         importedCount++
       })
 
+      // 原版 BewlyCat 备份没有该字段；导入时恢复个人版默认值，不能沿用导入前的关闭状态。
+      if (!Object.prototype.hasOwnProperty.call(importedSettings, 'noFeedMode'))
+        recognizedSettings.noFeedMode = originalSettings.noFeedMode
+
       if (importedCount === 0) {
         toast.warning(t('settings.maintenance.import_no_matches'))
         return
