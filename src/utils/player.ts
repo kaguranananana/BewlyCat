@@ -680,6 +680,11 @@ export function startAutoPlayUserChangeMonitoring() {
     // 检查是否点击了自动播放开关
     const switchBtn = target.closest('.auto-play .switch-btn, .continuous-btn .switch-btn')
     if (switchBtn) {
+      // No Feed 不允许普通单视频重新开启算法续播；用户显式队列不受影响。
+      if (settings.value.noFeedMode && isVideoPage() && detectVideoType() === VideoType.RECOMMEND) {
+        setTimeout(() => setAutoPlayState(false), 0)
+        return
+      }
       userManuallyChangedAutoPlay = true
     }
   }, true)
@@ -901,13 +906,19 @@ export function disableNativeEndPlaybackBehavior(videoType = detectVideoType()):
   setAutoPlayState(false)
 }
 
+/** 只关闭普通视频的算法续播，保留用户手动开启的单集循环。 */
+function disableRecommendedVideoAutoPlay(): void {
+  captureNativeEndPlaybackBehavior(VideoType.RECOMMEND)
+  setAutoPlayState(false)
+}
+
 // 根据视频类型和设置应用自动连播状态
 export function applyAutoPlayByVideoType() {
   const videoType = detectVideoType()
 
-  // No Feed 模式下，普通单视频播完必须停止；显式队列仍由下方原逻辑处理。
+  // No Feed 模式下，普通单视频不得进入算法推荐；显式队列和单集循环仍保留原语义。
   if (settings.value.noFeedMode && isVideoPage() && videoType === VideoType.RECOMMEND) {
-    disableNativeEndPlaybackBehavior(videoType)
+    disableRecommendedVideoAutoPlay()
     return
   }
 

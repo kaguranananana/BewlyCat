@@ -16,7 +16,6 @@ export function applyNoFeedPageState(enabled: boolean): void {
       html.${NO_FEED_ROOT_CLASS} #reco_list,
       html.${NO_FEED_ROOT_CLASS} .video-page-card-small,
       html.${NO_FEED_ROOT_CLASS} .recommend-list-v1,
-      html.${NO_FEED_ROOT_CLASS} .recommend-list-container,
       html.${NO_FEED_ROOT_CLASS} .bpx-player-ending-related,
       html.${NO_FEED_ROOT_CLASS} .bpx-player-ending-related-item {
         display: none !important;
