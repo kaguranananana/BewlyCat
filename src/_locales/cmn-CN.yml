@@ -278,6 +278,9 @@ settings:
   group_search_bar: 搜索栏
   group_hot_search: 热搜
   group_search_results: 搜索结果
+  group_no_feed: No Feed
+  no_feed_mode: No Feed / 关闭推荐流
+  no_feed_mode_desc: 关闭 Bilibili 的算法推荐流，仅保留搜索、动态、收藏、历史记录等主动访问入口。
   group_recommendation_mode: “个性推荐” 推荐模式
   group_recommendation_filters: “个性推荐” 过滤
   group_recommendation_filters_desc: |

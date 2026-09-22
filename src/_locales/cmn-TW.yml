@@ -277,6 +277,9 @@ settings:
   group_logo: LOGO
   group_search_bar: 搜尋列
   group_hot_search: 熱門搜尋
+  group_no_feed: No Feed
+  no_feed_mode: No Feed / 關閉推薦流
+  no_feed_mode_desc: 關閉 Bilibili 的演算法推薦流，只保留搜尋、動態、收藏、歷史記錄等主動瀏覽入口。
   group_recommendation_mode: 「為你推薦」推薦模式
   group_recommendation_filters: 「為你推薦」過濾
   group_recommendation_filters_desc: |

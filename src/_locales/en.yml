@@ -280,6 +280,9 @@ settings:
   group_search_bar: Search Bar
   group_hot_search: Hot Search
   group_search_results: Search Results
+  group_no_feed: No Feed
+  no_feed_mode: No Feed / Disable recommendation feeds
+  no_feed_mode_desc: Disable Bilibili's algorithmic recommendation feeds while keeping search, subscriptions, favorites, history, and other intentional entry points.
   group_recommendation_mode: '"For you" Recommendation Mode'
   group_recommendation_filters: '"For you" Recommendation Filters'
   group_recommendation_filters_desc: >

@@ -228,6 +228,7 @@ export const settingsSearchEntries: SettingsSearchEntry[] = [
   }),
   ...createEntries(homeRoute, [
     'settings.plugin.home',
+    'settings.no_feed_mode',
     'settings.group_recommendation_mode',
     'settings.show_recommendation_mode_switcher',
     'settings.remember_no_cookie_recommendation_state',

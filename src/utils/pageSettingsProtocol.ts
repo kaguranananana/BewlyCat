@@ -17,6 +17,7 @@ export interface PageSettingsPayload {
   enableCommentReplyTreeContainer: boolean
   enableCommentReplyTreeDisplay: boolean
   language: string
+  noFeedMode: boolean
   preventMobileRedirect: boolean
   showCommentHostTag: boolean
   showIPLocation: boolean
@@ -52,6 +53,7 @@ export function createPageSettingsPayload(value: unknown): PageSettingsPayload |
     || typeof value.enableCommentReplyTreeContainer !== 'boolean'
     || typeof value.enableCommentReplyTreeDisplay !== 'boolean'
     || typeof value.language !== 'string'
+    || typeof value.noFeedMode !== 'boolean'
     || typeof value.preventMobileRedirect !== 'boolean'
     || typeof value.showCommentHostTag !== 'boolean'
     || typeof value.showIPLocation !== 'boolean'
@@ -78,6 +80,7 @@ export function createPageSettingsPayload(value: unknown): PageSettingsPayload |
     enableCommentReplyTreeContainer: value.enableCommentReplyTreeContainer,
     enableCommentReplyTreeDisplay: value.enableCommentReplyTreeDisplay,
     language: value.language,
+    noFeedMode: value.noFeedMode,
     preventMobileRedirect: value.preventMobileRedirect,
     showCommentHostTag: value.showCommentHostTag,
     showIPLocation: value.showIPLocation,

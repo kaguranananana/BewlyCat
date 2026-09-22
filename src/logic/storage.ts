@@ -456,6 +456,8 @@ export interface Settings {
   depersonalizeSearchResults: boolean
   searchResultsPaginationMode: 'scroll' | 'pagination' // 搜索结果分页模式：滚动加载或翻页
 
+  // No Feed 总开关：关闭算法推荐流，保留搜索、订阅、收藏等主动入口
+  noFeedMode: boolean
   recommendationMode: RecommendationMode
   showRecommendationModeSwitcher: boolean
   autoSwitchRecommendationMode: boolean
@@ -782,6 +784,7 @@ export const originalSettings: Settings = {
   depersonalizeSearchResults: false,
   searchResultsPaginationMode: 'scroll', // 默认使用滚动加载
 
+  noFeedMode: true, // No Feed 个人版本默认关闭算法推荐流
   recommendationMode: 'web',
   showRecommendationModeSwitcher: false,
   autoSwitchRecommendationMode: true,

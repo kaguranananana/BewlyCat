@@ -306,6 +306,9 @@ settings:
   group_logo: LOGO
   group_search_bar: 搜尋欄
   group_hot_search: 熱搜
+  group_no_feed: No Feed
+  no_feed_mode: No Feed / 閂咗推介流
+  no_feed_mode_desc: 閂咗 Bilibili 嘅演算法推介流，只保留搜尋、動態、收藏、歷史記錄等主動瀏覽入口。
   group_recommendation_mode: 「估你心水」推介模式
   group_recommendation_filters: 「估你心水」過濾
   group_recommendation_filters_desc: |

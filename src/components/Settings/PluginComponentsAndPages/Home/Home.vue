@@ -159,6 +159,19 @@ function handleToggleHomeTab(tab: any) {
 
 <template>
   <div>
+    <SettingsItemGroup
+      :title="$t('settings.group_no_feed')"
+      :desc="$t('settings.no_feed_mode_desc')"
+    >
+      <SettingsItem
+        :title="$t('settings.no_feed_mode')"
+        :desc="$t('settings.no_feed_mode_desc')"
+        right-width="auto"
+      >
+        <Radio v-model="settings.noFeedMode" />
+      </SettingsItem>
+    </SettingsItemGroup>
+
     <SettingsItemGroup :title="$t('settings.group_recommendation_mode')">
       <SettingsItem :title="$t('settings.recommendation_mode')" right-width="auto">
         <template #desc>
