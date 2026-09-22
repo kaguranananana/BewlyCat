@@ -1272,6 +1272,8 @@ video_card:
   watched: Watched
   visited_recently: Visited within the past month
 home:
+  no_feed_title: Recommendation feeds are off
+  no_feed_desc: Personalized recommendations are not loaded here. Use search, or open Moments, Favorites, History, or Watch Later below.
   following_display_flat: List
   following_display_grouped: Groups
   following_search_videos: 'Search videos by {name}'

@@ -1006,6 +1006,10 @@ const canRefreshHomeSubPage = ref<boolean>(false)
 // 使用新的枚举状态管理撤销/前进按钮
 const undoForwardState = ref<UndoForwardState>(UndoForwardState.Hidden)
 const canRefreshCurrentPage = computed((): boolean => {
+  // No Feed 首页没有可刷新的推荐数据，Dock 与快捷键不应暴露空操作入口。
+  if (settings.value.noFeedMode && activatedPage.value === AppPage.Home)
+    return false
+
   return activatedPage.value !== AppPage.Home || homeActivatedPage.value === HomeSubPage.ForYou || canRefreshHomeSubPage.value
 })
 let refreshScrollTimer: ReturnType<typeof setTimeout> | undefined

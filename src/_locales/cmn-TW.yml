@@ -1194,6 +1194,8 @@ video_card:
   watched: 已觀看
   visited_recently: 近一個月內瀏覽過
 home:
+  no_feed_title: 推薦流已關閉
+  no_feed_desc: 這裡不會載入個人化推薦。請使用搜尋，或從下方進入動態、收藏、歷史記錄和稍後再看。
   following_display_flat: 不分組
   following_display_grouped: 按分組
   following_search_videos: '搜尋 {name} 的影片投稿'

@@ -1194,6 +1194,8 @@ video_card:
   watched: 睇過
   visited_recently: 近一個月內睇過
 home:
+  no_feed_title: 推介流閂咗
+  no_feed_desc: 呢度唔會載入個人化推介。請用搜尋，或者喺下面入去動態、收藏、歷史記錄同稍後再睇。
   following_display_flat: 不分組
   following_display_grouped: 按分組
   following_search_videos: '搜尋 {name} 嘅影片投稿'

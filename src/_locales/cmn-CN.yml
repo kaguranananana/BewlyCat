@@ -1179,6 +1179,8 @@ video_card:
   watched: 已观看
   visited_recently: 近一个月内浏览过
 home:
+  no_feed_title: 推荐流已关闭
+  no_feed_desc: 这里不会加载个性推荐。请使用搜索，或从下方进入动态、收藏、历史记录和稍后再看。
   following_display_flat: 不分组
   following_display_grouped: 按分组
   following_search_videos: '搜索 {name} 的视频投稿'

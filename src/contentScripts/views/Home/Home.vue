@@ -4,10 +4,11 @@ import { useI18n } from 'vue-i18n'
 
 import Icon from '~/components/Icon.vue'
 import LiquidSegmentIndicator from '~/components/LiquidSegmentIndicator.vue'
-import { useBewlyApp } from '~/composables/useAppProvider'
+import { UndoForwardState, useBewlyApp } from '~/composables/useAppProvider'
 import { provideHomeTabCache } from '~/composables/useHomeTabState'
 import { useLayoutEditMode } from '~/composables/useLayoutEditMode'
 import { OVERLAY_SCROLL_BAR_SCROLL, TOP_BAR_VISIBILITY_CHANGE } from '~/constants/globalEvents'
+import { AppPage } from '~/enums/appEnums'
 import { gridLayout, settings } from '~/logic'
 import { parseDedeUserID } from '~/logic/loginStatus'
 import type { RecommendationMode } from '~/logic/storage'
@@ -28,11 +29,15 @@ const forYouStore = useForYouStore()
 const { t } = useI18n()
 const { isLayoutEditing } = useLayoutEditMode()
 const {
+  activatedPage: appActivatedPage,
   handleBackToTop,
+  handlePageRefresh,
+  handleReachBottom,
   homeActivatedPage,
   homeActivatedPageTouched,
   isHomeTabSwitching,
   scrollViewportRef,
+  undoForwardState,
 } = useBewlyApp()
 const handleThrottledBackToTop = useThrottleFn((targetScrollTop: number = 0) => handleBackToTop(targetScrollTop), 1000)
 
@@ -76,9 +81,13 @@ const tabContentLoading = ref<boolean>(false)
 const currentTabs = ref<HomeTab[]>([])
 const tabPageRef = ref()
 const topBarVisibility = ref<boolean>(true)
-const shouldShowHomeTabs = computed(() => currentTabs.value.length > 1)
-const shouldShowRecommendationModeSwitcher = computed(() => settings.value.showRecommendationModeSwitcher && activatedPage.value === HomeSubPage.ForYou)
-const shouldShowHomeHeader = computed(() => shouldShowHomeTabs.value || shouldShowRecommendationModeSwitcher.value || settings.value.enableGridLayoutSwitcher)
+const shouldShowHomeTabs = computed(() => !settings.value.noFeedMode && currentTabs.value.length > 1)
+const shouldShowRecommendationModeSwitcher = computed(() => !settings.value.noFeedMode && settings.value.showRecommendationModeSwitcher && activatedPage.value === HomeSubPage.ForYou)
+const shouldShowHomeHeader = computed(() => !settings.value.noFeedMode && (shouldShowHomeTabs.value || shouldShowRecommendationModeSwitcher.value || settings.value.enableGridLayoutSwitcher))
+const noFeedEntryPages = [AppPage.Search, AppPage.Moments, AppPage.Favorites, AppPage.History, AppPage.WatchLater]
+const noFeedDockItems = computed(() => noFeedEntryPages
+  .map(page => mainStore.getDockItemByPage(page))
+  .filter(item => item !== undefined))
 const recommendationModeOptions = computed<{ label: string, value: RecommendationMode }[]>(() => [
   { label: 'Web', value: 'web' },
   { label: t('settings.recommendation_mode_web_no_cookie'), value: 'webNoCookie' },
@@ -102,6 +111,21 @@ watch(currentTabs, () => {
 watch(() => settings.value.enableGridLayoutSwitcher, (enabled) => {
   if (enabled)
     void gridIndicatorRef.value?.updateIndicator(true)
+})
+
+watch(() => settings.value.noFeedMode, async (enabled) => {
+  if (!enabled)
+    return
+
+  // No Feed 开启后先解除首页刷新与触底回调，避免已卸载的推荐页仍被 Dock 触发。
+  handlePageRefresh.value = undefined
+  handleReachBottom.value = undefined
+  undoForwardState.value = UndoForwardState.Hidden
+
+  // 等待推荐组件完成卸载，再清空组件快照与 Pinia 缓存，防止卸载钩子重新写回旧列表。
+  await nextTick()
+  tabCache.clear()
+  forYouStore.resetState()
 })
 
 // Cookie changes are reconciled by the top bar store. Refresh the active home
@@ -278,6 +302,11 @@ function handleChangeTab(tab: HomeTab) {
 function toggleTabContentLoading(loading: boolean) {
   tabContentLoading.value = loading
 }
+
+function openNoFeedEntry(page: AppPage) {
+  // 复用 BewlyCat 原有页面状态，Dock、URL 同步和原版页面策略仍由 App 统一处理。
+  appActivatedPage.value = page
+}
 </script>
 
 <template>
@@ -285,7 +314,7 @@ function toggleTabContentLoading(loading: boolean) {
     <!-- Home search page mode background -->
     <Transition name="bg">
       <div
-        v-if="settings.useSearchPageModeOnHomePage && settings.individuallySetSearchPageWallpaper"
+        v-if="!settings.noFeedMode && settings.useSearchPageModeOnHomePage && settings.individuallySetSearchPageWallpaper"
         pos="absolute" w-screen h-580px z-0
         :style="{
           left: '50%',
@@ -326,7 +355,7 @@ function toggleTabContentLoading(loading: boolean) {
       <!-- Home search page mode content -->
       <Transition name="content">
         <div
-          v-if="settings.useSearchPageModeOnHomePage"
+          v-if="!settings.noFeedMode && settings.useSearchPageModeOnHomePage"
           flex="~ col"
           justify-center
           items-center relative
@@ -470,8 +499,35 @@ function toggleTabContentLoading(loading: boolean) {
         @enter="restoreTabScrollPosition"
         @after-enter="finishTabSwitch"
       >
+        <section
+          v-if="settings.noFeedMode"
+          key="no-feed"
+          class="no-feed-home"
+        >
+          <div class="no-feed-home__icon" i-mingcute:compass-3-line aria-hidden="true" />
+          <h2 class="bew-page-heading">
+            {{ $t('home.no_feed_title') }}
+          </h2>
+          <p class="no-feed-home__description">
+            {{ $t('home.no_feed_desc') }}
+          </p>
+          <div class="no-feed-home__entries">
+            <Button
+              v-for="dockItem in noFeedDockItems"
+              :key="dockItem.page"
+              type="secondary"
+              @click="openNoFeedEntry(dockItem.page)"
+            >
+              <template #left>
+                <span :class="dockItem.icon" />
+              </template>
+              {{ $t(dockItem.i18nKey) }}
+            </Button>
+          </div>
+        </section>
         <Component
-          :is="pages[activatedPage]" :key="`${activatedPageCacheKey}:${cacheRevision}`"
+          :is="pages[activatedPage]" v-else
+          :key="`${activatedPageCacheKey}:${cacheRevision}`"
           ref="tabPageRef"
           :grid-layout="gridLayout.home"
           :top-bar-visibility="topBarVisibility"
@@ -518,6 +574,39 @@ function toggleTabContentLoading(loading: boolean) {
 .home-tab-enter-from,
 .home-tab-leave-to {
   opacity: 0;
+}
+
+.no-feed-home {
+  display: flex;
+  min-height: min(560px, calc(100vh - 180px));
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: var(--bew-space-4);
+  padding: var(--bew-space-10) var(--bew-space-6);
+  box-sizing: border-box;
+  text-align: center;
+}
+
+.no-feed-home__icon {
+  width: 48px;
+  height: 48px;
+  color: var(--bew-theme-color);
+}
+
+.no-feed-home__description {
+  max-width: 560px;
+  margin: 0;
+  color: var(--bew-text-2);
+  line-height: 1.7;
+}
+
+.no-feed-home__entries {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--bew-space-3);
+  margin-top: var(--bew-space-2);
 }
 
 .glass-panel {
